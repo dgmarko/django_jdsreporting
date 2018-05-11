@@ -1,0 +1,21 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+  <h1>Report Constuction</h1>
+
+  <form method="get">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Generate report</button>
+  </form>
+
+  <!--
+  <form method='post' action="{% url 'report_output' %}?vendor=value">
+    {% csrf_token %}
+    {{ repform.as_ul }}
+    <input type='submit' value='Submit'>
+    <input type="hidden" name="next" value="{{ next }}" />
+  </form>
+-->
+
+{% endblock %}

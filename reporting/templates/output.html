@@ -1,0 +1,24 @@
+{% extends "base_generic.html" %}
+{% load render_table from django_tables2 %}
+
+{% block content %}
+  <h3>{{ repDate }} Report for: {{ vendor }}</h3>
+
+  <div id="container"></div>
+  <script src="https://code.highcharts.com/highcharts.src.js"></script>
+
+  <script>
+    Highcharts.chart('container', {{ chart|safe }});
+  </script>
+
+  <font size="1">
+    <head>
+      <title>Report</title>
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/˓→css/bootstrap.min.css" />
+    </head>
+    <body>
+      {% render_table table %}
+    </body>
+  </font>
+
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base_generic.html" %}
+
+{% block content %}
+<h1>Data Input Page</h1>
+
+  <p></p>
+
+<h3>Please Select the button below to input a Product Table file</h3>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="myfile">
+    <button type="submit" value="{{b.id}}" name="prod_table">Upload Product Table CSV</button>
+  </form>
+
+<h3>Please Select the button below to input a Sales Diagnostic file</h3>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="file" name="myfile">
+      <button type="submit" value="{{b.id}}" name="sales_diag">Upload Sales Diagnostic CSV</button>
+    </form>
+
+<h3>Please Select the button below to input an Inventory Health file</h3>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="file" name="myfile">
+      <button type="submit" value="{{b.id}}" name="inv_health">Upload Inventory Health CSV</button>
+    </form>
+
+<h3>Please Select the button below to input an Sponsored Products file</h3>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="file" name="myfile">
+      <button type="submit" value="{{b.id}}" name="spon_prod">Upload Sponsored Products CSV</button>
+    </form>
+
+<h3>Please Select the button below to input an Inventory Forecast file</h3>
+
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <input type="file" name="myfile">
+      <button type="submit" value="{{b.id}}" name="inv_fore">Upload Inventory Forecast CSV</button>
+    </form>
+
+  <!--
+  <p>You have visited this page {{ num_visits }}{% if num_visits == 1 %} time{% else %} times{% endif %}.</p>
+  -->
+{% endblock %}
