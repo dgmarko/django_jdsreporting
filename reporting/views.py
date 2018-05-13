@@ -18,6 +18,9 @@ from datetime import datetime, timedelta
 import re
 import json
 from decimal import Decimal
+import psycopg2
+from django.db import transaction, DatabaseError
+from django.db.transaction import atomic
 
 def get_user_permissions(user):
     if user.is_superuser:
@@ -242,7 +245,6 @@ def convertInput(inFile, ftype):
 
         headers.append('product')
 
-        print(headers)
         outSet.headers = headers
         firstLine = True
         #Iterate through data making necessary conversions and tying data instances to product
@@ -284,9 +286,10 @@ def convertInput(inFile, ftype):
                                 val = val.replace(',', '')
                             val = float(val)
 
+                        if val == '':
+                            val = 0
                         outList.append(val)
                     else:
-                        print("Hur", j)
                         if j == 'date':
                             dateD = dateOut.split('/')
                             if len(dateD[0]) == 1:
@@ -319,8 +322,6 @@ def convertInput(inFile, ftype):
                 outSet.append(tuple(outList))
             firstLine = False
 
-        for i in outSet:
-            print(i)
         return outSet
 
     elif ftype == 'inv_health':
@@ -592,6 +593,11 @@ def index(request):
     """
     return render(request, 'index.html', context = {})
 
+
+def lot_of_saves(queryset):
+    for item in queryset:
+        item.save(force_update=True)
+
 @login_required
 @permission_required('product.can_input_data')
 def data_input(request):
@@ -622,17 +628,65 @@ def data_input(request):
             amended_data = convertInput(imported_data, typ)
 
             if typ == 'prod_table':
-                product_resource = ProductResource()
-                result = product_resource.import_data(amended_data, dry_run=True)  # Test the data import
-                if not result.has_errors():
-                    product_resource.import_data(amended_data, dry_run=False)  # Actually import now
-                #else:
+                recordList = []
+
+                for j in amended_data:
+                    i = Product()
+                    data = list(j)
+                    i.asin = data[0]
+                    i.product_name = data[1]
+                    i.warehouse_units = data[2]
+                    i.external_id = data[3]
+                    i.released = data[4]
+                    i.list_price = data[5]
+                    i.product_group = data[6]
+                    i.category = data[7]
+                    i.sub_category = data[8]
+                    i.model_number = data[9]
+                    i.catalog_number = data[10]
+                    i.replenishment_code = data[11]
+                    i.page_view_rank = data[12]
+                    i.brand_code = data[13]
+                    i.vendor = data[14]
+
+                    recordList.append(i)
+
+                with transaction.atomic():
+                    # Loop over each store and invoke save() on each entry
+                    for i in recordList:
+                        # save() method called on each member to create record
+                        print(i.asin)
+                        i.save()
             if typ == 'sales_diag':
-                salesdiag_resource = SalesDiagnosticResource()
-                result = salesdiag_resource.import_data(amended_data, dry_run=True)  # Test the data import
-                if not result.has_errors():
-                    salesdiag_resource.import_data(amended_data, dry_run=False)  # Actually import now
-                #else:
+                recordList = []
+
+                for j in amended_data:
+                    i = SalesDiagnostic()
+                    data = list(j)
+                    i.asin = data[0]
+                    i.date = data[1]
+                    i.asin_date = data[2]
+                    i.product_name = data[3]
+                    i.shipped_cogs = data[4]
+                    i.shipped_cogs_perc = data[5]
+                    i.shipped_cogs_prior_period = data[6]
+                    i.shipped_cogs_last_year = data[7]
+                    i.shipped_units = data[8]
+                    i.shipped_units_perc = data[9]
+                    i.shipped_units_prior_period = data[10]
+                    i.shipped_units_last_year = data[11]
+                    i.customer_returns = data[12]
+                    i.free_replacements = data[13]
+                    i.product = data[14]
+
+                    recordList.append(i)
+
+                with transaction.atomic():
+                    # Loop over each store and invoke save() on each entry
+                    for i in recordList:
+                        # save() method called on each member to create record
+                        print(i.asin)
+                        i.save()
             if typ == 'inv_health':
                 invhealth_resource = InventoryHealthResource()
                 result = invhealth_resource.import_data(amended_data, dry_run=True)  # Test the data import
@@ -671,6 +725,7 @@ class DecimalEncoder(json.JSONEncoder):
             return float(o)
         return super(DecimalEncoder, self).default(o)
 
+
 class Report(FormView):
     template_name = 'report.html'
     form_class = ReportForm
@@ -684,7 +739,7 @@ class Report(FormView):
                 heads = form.cleaned_data.get('headers')
 
                 #Pull data for COGS chart and create json to pass information for chart
-                dataset = SalesDiagnostic.objects.values('date').annotate(
+                dataset = SalesDiagnostic.objects.filter(date__lte=entry_date).filter(date__gte=entry_date-timedelta(days=6)).values('date').annotate(
                 firstCol=Sum('shipped_cogs', filter=Q(date=entry_date-timedelta(days=6))),
                 secondCol=Sum('shipped_cogs', filter=Q(date=entry_date-timedelta(days=5))),
                 thirdCol=Sum('shipped_cogs', filter=Q(date=entry_date-timedelta(days=4))),
